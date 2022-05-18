@@ -169,12 +169,14 @@
 
 				let functions = JSON.parse(params.functions)
 
-				for (let fun of functions){
+				let color = [0xff7777,0x77ff77,0x7777FF,0x000000]
+				
+				for (let i in functions){
 					function f(x,y){
-						return eval(fun);
+						return eval(functions[i]);
 					}
 	
-					create_function(xmin,xmax,ymin,ymax,zmin,zmax,presx,presy,f,group,0x7777FF)
+					create_function(xmin,xmax,ymin,ymax,zmin,zmax,presx,presy,f,group,color[i%4])
 				}
 
 
