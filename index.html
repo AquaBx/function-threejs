@@ -17,6 +17,16 @@
 			}
 		</script>
 
+		<form style="position: absolute;top:0;left: 0;width:230px;padding:10px;">
+			<label>zoom : </label><input min=1 type="number" id="zoom">
+			<label>xmin : </label><input type="number" id="xmin">
+			<label>xmax : </label><input type="number" id="xmax">
+			<label>ymin : </label><input type="number" id="ymin">
+			<label>ymax : </label><input type="number" id="ymax">
+			<label>zmin : </label><input type="number" id="zmin">
+			<label>zmax : </label><input type="number" id="zmax">
+		</form>
+		
 		<script type="module">
 
 			import * as THREE from 'three';
@@ -44,9 +54,53 @@
 			let windowHalfX = window.innerWidth / 2;
 			let windowHalfY = window.innerHeight / 2;
 
+			const query = window.location.search
+			const params = Object.fromEntries(new URLSearchParams(query))
+
+			function init_value(id,defaut){
+				let slider = document.getElementById(id);
+
+				slider.oninput = (e) => {
+					window[id] = parseFloat(e.target.value) ; 
+				}
+				
+				let val
+
+				if (params[id]){
+					val = parseFloat(params[id])
+				}
+				else{
+					val = defaut
+				}
+				
+				slider.value = val
+				return parseFloat(val)
+			}
+
+			let color = [0xff7777,0x77ff77,0x7777FF,0x000000]
+
+			function actu_value(id,defaut){
+				return parseFloat( document.getElementById(id).value )
+			}
+
+			let values = {}
+			let values0
+
+			values.zoom = init_value("zoom",1)
+			values.xmin = init_value("xmin",-20)
+			values.xmax = init_value("xmax",20)
+			values.ymin = init_value("ymin",-20)
+			values.ymax = init_value("ymax",20)
+			values.zmin = init_value("zmin",-20)
+			values.zmax = init_value("zmax",20)
+			values.presx = (1/values.zoom);
+			values.presy = (1/values.zoom);
+
+			let functions = JSON.parse(params.functions)
+
 			init();
 			animate();
-
+			
 			function createlinesym(x,y,z,color,group){
 				// Pour créer des axes
 
@@ -93,6 +147,7 @@
 						
 						noy +=1
 					}
+					
 					noi +=1
 					nsControlPoints.push(intermediate)
 				}
@@ -120,11 +175,10 @@
 					wireframe: true,
 				})
 
-				const object = new THREE.Mesh( geometry, material );
-				object.position.set( 0, 0, 0 );
-				group.add( object );
+				let objet = new THREE.Mesh( geometry, material );
+				objet.position.set( 0, 0, 0 );
+				group.add( objet )
 			}
-
 
 			function init() {
 
@@ -135,53 +189,14 @@
 				camera.position.set( 0, 0, 200);
 				camera.rotation.set( 0, 0, 0 );
 
-				scene = new THREE.Scene();
-				scene.background = new THREE.Color( 0xF0f0f0 );
-
-				scene.add( new THREE.AmbientLight( 0xffffff ) );
-
-				const light = new THREE.DirectionalLight( 0xffffff, 1 );
-				light.position.set( 0, 0, 0 );
-				scene.add( light );
-
 				group = new THREE.Group();
 				group.position.y = 0;
 				group.position.y = 0;
-
+				
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0xF0f0f0 );
 				scene.add( group );
-
-				createlinesym(1000,0,0,0xFF0000,group); //x
-				createlinesym(0,0,1000,0x00FF00,group); //y
-				createlinesym(0,1000,0,0x0000FF,group); //z		
 				
-				const query = window.location.search
-				const params = Object.fromEntries(new URLSearchParams(query))
-
-				let zoom = parseFloat(params.zoom)
-				let xmin = parseFloat(params.xmin)
-				let xmax = parseFloat(params.xmax)
-				let ymin = parseFloat(params.ymin)
-				let ymax = parseFloat(params.ymax)
-				let zmin = parseFloat(params.zmin)
-				let zmax = parseFloat(params.zmax)
-				let presx = (1/zoom);
-				let presy = (1/zoom);
-
-				let functions = JSON.parse(params.functions)
-
-				let color = [0xff7777,0x77ff77,0x7777FF,0x000000]
-				
-				for (let i in functions){
-					function f(x,y){
-						return eval(functions[i]);
-					}
-	
-					create_function(xmin,xmax,ymin,ymax,zmin,zmax,presx,presy,f,group,color[i%4])
-				}
-
-
-				group.scale.multiplyScalar( zoom );
-
 				renderer = new THREE.WebGLRenderer( { antialias: true } );
 				renderer.setPixelRatio( window.devicePixelRatio );
 				renderer.setSize( window.innerWidth, window.innerHeight );
@@ -237,9 +252,45 @@
 				render();
 			}
 
+			function reset_group(){
+				group.scale.setScalar( values.zoom );
+				group.children = [];
+
+				createlinesym(1000,0,0,0xFF0000,group); //x
+				createlinesym(0,0,1000,0x00FF00,group); //y
+				createlinesym(0,1000,0,0x0000FF,group); //z
+
+				for (let i in functions){
+					function f(x,y){
+						return eval(functions[i]);
+					}
+	
+					create_function(values.xmin,values.xmax,values.ymin,values.ymax,values.zmin,values.zmax,values.presx,values.presy,f,group,color[i%4])
+				}
+			}
+
+			
+
 			function render() {
 				group.rotation.y += ( targetRotationX - group.rotation.y ) * 0.05;
 				group.rotation.x += ( targetRotationY - group.rotation.x ) * 0.05;
+				
+				values.zoom = actu_value("zoom")
+				values.xmin = actu_value("xmin")
+				values.xmax = actu_value("xmax")
+				values.ymin = actu_value("ymin")
+				values.ymax = actu_value("ymax")
+				values.zmin = actu_value("zmin")
+				values.zmax = actu_value("zmax")
+
+				values.presx = (1/values.zoom);
+				values.presy = (1/values.zoom);
+				
+				if (JSON.stringify(values0) != JSON.stringify(values) ){
+					reset_group()
+					values0 = {...values}
+				}
+
 				renderer.render( scene, camera );
 			}
 
