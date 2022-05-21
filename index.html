@@ -103,9 +103,7 @@
 				createlinesym(0,1000,0,0x0000FF,group); //z
 
 				for (let i in values.functions){
-					function f(x,y){
-						return eval(values.functions[i]);
-					}
+					let f = (x,y) => Function("let x = " + x.toString() + ";let y = " + y.toString() + ";return " + "x+y")()
 	
 					create_function(values.xmin,values.xmax,values.ymin,values.ymax,values.zmin,values.zmax,values.presx,values.presy,f,group,color[i%4])
 				}
